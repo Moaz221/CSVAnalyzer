@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">CSV Analyzer</string>
+    <string name="title_activity_home_screen">HomeScreen</string>
+    <string name="title_activity_analyzing_screen">AnalyzingScreen</string>
+    <string name="title_activity_result_screen">ResultScreen</string>
+    <string name="title_activity_app_navigation">AppNavigation</string>
+    <string name="title_activity_pdf_report_screen">PdfReportScreen</string>
+    <string name="title_activity_advanced_charts">AdvancedCharts</string>
+</resources>

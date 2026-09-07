@@ -51,10 +51,6 @@ android {
     }
 }
 
-kotlin {
-    jvmToolchain(11)
-}
-
 dependencies {
     // AndroidX & Material Design الأساسية للواجهات
     implementation("androidx.core:core-ktx:1.12.0")
@@ -94,6 +90,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.activity.compose)
     implementation("androidx.navigation:navigation-compose:2.7.7")
+    
     // مكتبات الاختبار
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

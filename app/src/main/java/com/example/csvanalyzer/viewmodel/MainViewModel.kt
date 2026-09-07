@@ -1,13 +1,16 @@
 package com.example.csvanalyzer.viewmodel
 
+import android.app.Application
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.csvanalyzer.api.RetrofitClient
 import com.example.csvanalyzer.api.SafeGson
+import com.example.csvanalyzer.data.HistoryManager
 import com.example.csvanalyzer.model.AnalysisResult
+import com.example.csvanalyzer.model.HistoryFile
 import com.example.csvanalyzer.model.LocalCsvProfile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,7 +28,10 @@ sealed class MainUiState {
     data class Error(val message: String) : MainUiState()
 }
 
-class MainViewModel : ViewModel() {
+class MainViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val historyManager = HistoryManager(application)
+    val historyFiles: StateFlow<List<HistoryFile>> = historyManager.history
 
     private val _uiState = MutableStateFlow<MainUiState>(MainUiState.Idle)
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
@@ -111,9 +117,19 @@ class MainViewModel : ViewModel() {
                 )
 
                 currentAnalysisResult = finalResult
-                // استخدام SafeGson لضمان الحفاظ على تنسيق البيانات
                 currentRawJson = SafeGson.instance.toJson(finalResult)
-                currentTitle = finalResult.fileName ?: "Uploaded CSV Analysis"
+                currentTitle = finalResult.fileName ?: safeName
+
+                // Save to history
+                viewModelScope.launch {
+                    historyManager.addHistoryItem(
+                        HistoryFile(
+                            fileName = currentTitle,
+                            fileSize = "${fileSize / 1024} KB",
+                            rawJson = currentRawJson
+                        )
+                    )
+                }
 
                 _uiState.value = MainUiState.Success(isDemo = false)
 
@@ -217,5 +233,24 @@ class MainViewModel : ViewModel() {
 
     fun resetState() {
         _uiState.value = MainUiState.Idle
+    }
+
+    fun loadHistoryItem(item: HistoryFile) {
+        currentRawJson = item.rawJson
+        currentTitle = item.fileName
+        // Note: AnalysisResult will be parsed by ResultViewModel from currentRawJson
+        _uiState.value = MainUiState.Success(isDemo = item.fileName.contains("GoBike", ignoreCase = true))
+    }
+
+    fun deleteHistoryItem(id: String) {
+        viewModelScope.launch {
+            historyManager.deleteHistoryItem(id)
+        }
+    }
+
+    fun clearHistory() {
+        viewModelScope.launch {
+            historyManager.clearHistory()
+        }
     }
 }

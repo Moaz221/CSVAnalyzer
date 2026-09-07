@@ -38,20 +38,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.csvanalyzer.R
+import com.example.csvanalyzer.model.HistoryFile
 import com.example.csvanalyzer.ui.components.PremiumBottomNavigation
 import com.example.csvanalyzer.ui.components.PremiumTopBar
 import com.example.csvanalyzer.ui.components.dashedBorder
-import com.example.csvanalyzer.ui.theme.BgDark
-import com.example.csvanalyzer.ui.theme.GoldPremium
-import com.example.csvanalyzer.ui.theme.IconGreen
-import com.example.csvanalyzer.ui.theme.IconGreenBg
-import com.example.csvanalyzer.ui.theme.MainFont
-import com.example.csvanalyzer.ui.theme.SurfaceDark
-import com.example.csvanalyzer.ui.theme.TextGray
-import com.example.csvanalyzer.ui.theme.TextWhite
+import com.example.csvanalyzer.ui.theme.*
 import com.example.csvanalyzer.viewmodel.MainUiState
 import com.example.csvanalyzer.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun HomeScreen(
@@ -62,6 +59,7 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val uiState by viewModel.uiState.collectAsState()
+    val historyFiles by viewModel.historyFiles.collectAsState()
 
     var selectedFileName by remember { mutableStateOf<String?>(null) }
 
@@ -162,6 +160,32 @@ fun HomeScreen(
                     enabled = !isLoading,
                     onClick = { viewModel.fetchGoBikeDemo() }
                 )
+
+                if (historyFiles.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(28.dp))
+
+                    SectionHeader(
+                        title = "Recent Analysis",
+                        action = "Clear All",
+                        onActionClick = { viewModel.clearHistory() }
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        historyFiles.take(5).forEach { file ->
+                            HistoryItemCard(
+                                file = file,
+                                onClick = {
+                                    viewModel.loadHistoryItem(file)
+                                },
+                                onDelete = {
+                                    viewModel.deleteHistoryItem(file.id)
+                                }
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(18.dp))
 
@@ -494,7 +518,8 @@ private fun FuturisticUploadCard(
 @Composable
 private fun SectionHeader(
     title: String,
-    action: String
+    action: String,
+    onActionClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -512,7 +537,8 @@ private fun SectionHeader(
             text = action,
             color = GoldPremium,
             fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.clickable { onActionClick() }
         )
     }
 }
@@ -726,6 +752,79 @@ private fun LoadingOverlay(message: String) {
                 text = "Preparing analysis engine...",
                 color = TextWhite.copy(alpha = 0.6f),
                 fontSize = 12.sp
+            )
+        }
+    }
+}
+
+/* ============================================================
+   History Item Card
+   ============================================================ */
+
+@Composable
+private fun HistoryItemCard(
+    file: HistoryFile,
+    onClick: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val dateFormatter = remember { SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()) }
+    val dateString = dateFormatter.format(Date(file.analysisDate))
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(SurfaceDark.copy(alpha = 0.6f))
+            .border(
+                width = 1.dp,
+                color = Color.White.copy(alpha = 0.04f),
+                shape = RoundedCornerShape(20.dp)
+            )
+            .clickable { onClick() }
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(GoldPremium.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.InsertDriveFile,
+                contentDescription = null,
+                tint = GoldPremium,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = file.fileName,
+                color = TextWhite,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "${file.fileSize} • $dateString",
+                color = TextWhite.copy(alpha = 0.5f),
+                fontSize = 11.sp
+            )
+        }
+
+        IconButton(onClick = onDelete) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "Options",
+                tint = TextGray,
+                modifier = Modifier.size(20.dp)
             )
         }
     }

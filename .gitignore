@@ -35,5 +35,7 @@ local.properties
 
 # Captures and screenshots
 captures/
-   *.hprof
-   java_pid*
+
+# Memory Dumps
+*.hprof
+java_pid*
